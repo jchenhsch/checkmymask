@@ -35,7 +35,16 @@ Live mask detection CNN webapp with dockerized setup and bootstrap script for GC
                 proxy_set_header X-Forwarded-Proto $scheme;
                  }
      ```
- 3. access / test the website on domain https://checkmymask.net </br>
+   Also sample setting block for redirect HTTP -> HTTPS
+   ```
+   server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name checkmymask.net;
+    return 301 https://$host$request_uri;
+   }
+   ```
+ 4. access / test the website on domain https://checkmymask.net </br>
     should be able to see the processed images with face detected and "Mask" / "No Mask" annotation
 
 ## Improvements and current work
