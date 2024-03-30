@@ -66,4 +66,4 @@ EXPOSE 8000
 EXPOSE 443
 
 # Run app.py when the container launches
-CMD ["gunicorn","-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]
+CMD ["gunicorn","-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "1", "-b", "0.0.0.0:8000", "app:app"]
