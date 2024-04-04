@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <title>Mask Detection</title>
+    <style>
+        h1{
+            font-size: 30px;
+        }
+        p {
+            font-size: 20px;
+        }   
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .start-button, .stop-button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 20px 40px;
+            margin: 10px 0;
+            border: none;
+            cursor: pointer;
+            border-radius: 16px;
+            font-size: medium ;
+        }
+        .stop-button {
+            background-color: #f44336; /* Red */
+        }
+        .start-button:hover {
+            background-color: #45a048;
+        }
+        .stop-button:hover {
+            background-color: #d32f2f;
+        }
+        img{
+            max-width: 100%;
+            height: auto;
+        }
+
+        video {
+            position: absolute;
+            top: -10000px;
+            left: -10000px;
+            max-width: 100%;
+            height: auto;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="model-description">
+        <h1>Mask Detection Model</h1>
+        <p>Binary mask classification using a CNN trained with raw facial data.[[server_ip]]</p>
+    </div>
+    <div class="image-frame">
+        <!-- Original video element hidden -->
+        <video id="video-feed" style="display: none;"></video>
+        <!-- Image element to display the processed frame -->
+        <img id="processed-frame" style="display: block; margin: auto;">
+        <br>
+        <button class="start-button" onclick="startMaskDetection()">Start Mask Detection</button>
+        <button class="stop-button" onclick="stopMaskDetection()">Stop Mask Detection</button>
+    </div>
+    
+    <script>
+        var serverIp = "[[server_ip]]";
+        console.log(serverIp);  // Check if serverIp is correctly set
+    </script>
+    
+    <script>
+        var video = document.getElementById('video-feed');
+        var started = false;
+        var buffer = [];
+        var bufferLength = 20; // Number of frames to buffer
+        var socket = null; // Define socket globally
+
+        function connectSocket() {
+            socket = io.connect('https://'+ '[[server_ip]]'+':443');
+
+            socket.on('connect', function() {
+                console.log('Connected to server');
+            });
+
+            socket.on('disconnect', function() {
+                console.log('Disconnected from server');
+            });
+
+            socket.on('processed_frame', function(data) {
+                console.log(data, "triggered")
+                buffer.push(data.image_data);
+
+                if (buffer.length > bufferLength) {
+                    buffer.shift(); // Remove oldest frame if buffer is full
+                }
+
+                // Display the latest frame in the buffer
+                var img = document.getElementById('processed-frame');
+                img.src = 'data:image/jpeg;base64,' + buffer[buffer.length - 1];
+                
+            });
+        }
+
+        async function startCamera() {
+            if (!socket) {
+                connectSocket();
+            }
+
+            if (navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                        video.play();
+
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+
+                        video.addEventListener('loadedmetadata', function() {
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                        });
+
+                        setInterval(() => {
+                            if (!started) return;
+                            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            const dataURL = canvas.toDataURL('image/jpeg');
+                            socket.emit('frame', dataURL);
+                        }, 1000 / 10);
+                    })
+                    .catch(function(err) {
+                        console.error('Error accessing camera:', err);
+                    });
+            }
+        }
+
+        function startMaskDetection() {
+            if (!started) {
+                started = true;
+                startCamera();
+            }
+        }
+
+        function stopMaskDetection() {
+            if (started) {
+                if (video.srcObject) {
+                    const tracks = video.srcObject.getTracks();
+                    tracks.forEach(track => track.stop());
+                }
+                video.srcObject = null
+                started = false;
+                const img = document.getElementById('processed-frame');
+                img.src = "";
+                if (socket) {
+                    socket.disconnect();
+                    socket = null;
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>
