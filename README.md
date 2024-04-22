@@ -1,6 +1,11 @@
 # Mask Detection with Live Stream 
 Live mask detection CNN webapp with dockerized setup and bootstrap script for GCP VM
 
+## To run the docker file
+docker pull jchenhsch/live_msk_detect_5fps
+docker run -p 8000:8000 jchenhsch/live_msk_detect_5fps
+then access the app @ https://checkmymask.net
+
 ## To set the entire app environment 
 
 1. run bootstrap script by specify startup-script-url metadata and upload the script to Cloud Storage as url </br>
@@ -51,6 +56,8 @@ Live mask detection CNN webapp with dockerized setup and bootstrap script for GC
 1. There are a lot of delays on image transmission of the live mask detection, and current the multiwork mode can only handle ***4*** concurrent requests at the same time. Need to set up either autoscaling or some load balancing features to make it more dynamic </br>
 
 2. UI/UX experience needs improvement, maybe need more powerful models instead of just mask detection, login, logout, or some design on webpages need to be designed. (maybe react?) </br>
+
+3. Faster prediction / preprocessing speed is needed given the ultimate goal is to run the app on 30fps </br>
 
 
 
