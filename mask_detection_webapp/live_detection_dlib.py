@@ -36,7 +36,7 @@ def live_detect_dlib(model, frame, process_frame=False):
             predictions = model(image_array)
             mask_prob = predictions[0][0]
 
-            label = 'No Mask (未佩戴口罩)' if mask_prob > 0.5 else 'Mask (已佩戴口罩）'
+            label = 'No Mask' if mask_prob > 0.5 else 'Mask'
             cv2.putText(frame, label, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
             _, buffer = cv2.imencode('.jpg', frame)

@@ -1,8 +1,8 @@
-gunicorn
-Flask==3.0.2
+Gunicorn
+Flask==2.2.5
 Flask_Cors==4.0.0
 Flask_SocketIO==5.3.6
 numpy==1.26.4
-Pillow==10.2.0
-tensorflow==2.14.0
-
+opencv_python==4.8.0.74
+Pillow==10.3.0
+tensorflow==2.16.1

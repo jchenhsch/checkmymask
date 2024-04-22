@@ -2,6 +2,8 @@ from flask import Flask, render_template, Response, send_file,request
 import cv2
 import numpy as np
 import tensorflow as tf
+import time
+
 
 from live_detection_face_cascade import live_detect_face_cascade
 from flask_socketio import SocketIO, emit
@@ -13,10 +15,14 @@ import os
 from PIL import Image
 from io import BytesIO
 
+
 import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
+
+# Enable eager execution for TensorFlow
+tf.compat.v1.enable_eager_execution()
 
 app = Flask(__name__)
 app.jinja_env.variable_start_string = '[['
@@ -25,17 +31,18 @@ app.jinja_env.auto_reload = True
 
 SocketIO = SocketIO(app, cors_allowed_origins="*")
 
-
 app.config['SECRET_KEY'] = 'secret!'
 
 # load the machine learning model in the app before runnning
-model_loc = "my_model"
-model = tf.keras.models.load_model(model_loc)
+model_loc = "my_model/my_model_quant.tflite"
 
-def generate_data():
-    for i in range(10):
-        yield i
-        
+try:
+    model = tf.lite.Interpreter(model_loc)
+    model.allocate_tensors()
+    
+except Exception as e:
+    print("An error occurred while loading the model:", e)
+
 # Assuming SocketIO is already initialized
 @SocketIO.on('connect')
 def handle_connect():
@@ -43,6 +50,7 @@ def handle_connect():
 
 @SocketIO.on('disconnect')
 def handle_disconnect():
+    SocketIO.server.manager.rooms.clear()
     print(f"Client disconnected, IP: {request.remote_addr}")
 
 @SocketIO.on('frame')
@@ -57,11 +65,11 @@ def handle_message(data):
     image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
 
     try:
-        processed_image_data = live_detect_face_cascade(model, image, process_frame=True)  
-        for processed_frame in processed_image_data:
-            # Assuming 'processed_frame' is the binary data of the processed image
-            emit('processed_frame', {'image_data': base64.b64encode(processed_frame).decode('utf-8')}, cache_timeout=0)
-            print("message emitted ")
+       
+        processed_image_data = live_detect_face_cascade(model, image, process_frame=True) 
+        emit('processed_frame', {'image_data': base64.b64encode(processed_image_data).decode('utf-8')}, cache_timeout=0)
+        # print("message emitted ")
+
     except Exception as e:
         print("An error occurred:", e)
 
@@ -74,4 +82,4 @@ def index():
 
 
 if __name__ == '__main__':
-    SocketIO.run(app, host='0.0.0.0',port=8001)
+    SocketIO.run(app, host='0.0.0.0',port=8000)

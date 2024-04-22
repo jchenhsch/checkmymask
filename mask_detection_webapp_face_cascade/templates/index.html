@@ -82,11 +82,13 @@
         var video = document.getElementById('video-feed');
         var started = false;
         var buffer = [];
-        var bufferLength = 20; // Number of frames to buffer
+        var bufferLength = 10; // Number of frames to buffer
         var socket = null; // Define socket globally
+        var stream = null; // Define stream globally
+
 
         function connectSocket() {
-            socket = io.connect('https://'+ '[[server_ip]]'+':443');
+            socket = io.connect('http://'+ '[[server_ip]]'+':8000');
 
             socket.on('connect', function() {
                 console.log('Connected to server');
@@ -101,7 +103,7 @@
                 buffer.push(data.image_data);
 
                 if (buffer.length > bufferLength) {
-                    buffer.shift(); // Remove oldest frame if buffer is full
+                    buffer.splice(0,3); // Remove oldest frame if buffer is full
                 }
 
                 // Display the latest frame in the buffer
@@ -152,14 +154,19 @@
 
         function stopMaskDetection() {
             if (started) {
-                if (video.srcObject) {
-                    const tracks = video.srcObject.getTracks();
-                    tracks.forEach(track => track.stop());
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
                 }
-                video.srcObject = null
+                video.srcObject = null;
                 started = false;
+                buffer = []; // Reset the buffer
                 const img = document.getElementById('processed-frame');
-                img.src = "";
+                img.src = 'data:image/jpeg;base64,' + buffer[buffer.length - 1] + '?timestamp=' + new Date().getTime();
+                img.src = ""
+                // Reload the page and clear the local storage
+                location.reload(true);
+                localStorage.clear();
                 if (socket) {
                     socket.disconnect();
                     socket = null;
